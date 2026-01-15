@@ -13,9 +13,14 @@ class Gerenciador:
 
     def salvar_dados(self):
         with open('nexus_data.json', 'w') as arquivo:
-            dados_para_salvar = [t.__dict__ for t in self.lista_tarefas]
-            json.dump(dados_para_salvar, arquivo, indent=4)
-            print("Dados salvos com sucesso!")
+            dados_limpos = []
+            for t in self.lista_tarefas:
+                info = t.__dict__.copy()
+                info['inicio_timer'] = None
+                dados_limpos.append(info)
+
+            json.dump(dados_limpos, arquivo, indent=4)
+        print("Dados sincronizados com sucesso!")
 
     def carregar_dados(self):
         try:
@@ -69,10 +74,51 @@ class Gerenciador:
         except ValueError:
             print("[!] Erro: Digite um número de ID válido.")
 
+    def gerenciar_timer(self, id_alv, acao):
+        try:
+            id_alv = int(id_alv)
+            encontrado = False
+
+            for t in self.lista_tarefas:
+                if t.id == id_alv:
+                    encontrado = True
+                    if acao == "play":
+                        t.inicio_timer = datetime.now()
+                        print(f"[▶] Timer iniciado para: {t.nome}")
+                    elif acao == "stop":
+                        if t.inicio_timer is None:
+                            print("[!] O timer não estava rodando para esta tarefa.")
+                        else:
+                            tempo_passado = datetime.now() - t.inicio_timer
+                            minutos = tempo_passado.total_seconds() / 60
+                            t.tempo_dedicado += round(minutos, 2)
+                            t.inicio_timer = None
+                            self.salvar_dados()
+                            print(f"[■] Timer parado. +{round(minutos, 2)} min adicionados.")
+                    return
+            if not encontrado:
+                print(f"[!] Erro: A tarefa com ID {id_alv} não existe.")
+
+        except ValueError:
+            print("[!] Erro: Digite um número de ID válido.")
+
+    def adicionar_tempo_manual(self, id_alv, minutos):
+        try:
+            id_alv = int(id_alv)
+            for t in self.lista_tarefas:
+                if t.id == id_alv:
+                    t.tempo_dedicado += float(minutos)
+                    self.salvar_dados()
+                    print(f"[+] {minutos} minutos adicionados à tarefa {t.nome}.")
+                    return
+            print("Tarefa não encontrada.")
+        except ValueError:
+            print("[!] Valores inválidos.")
+
 
 class Tarefa:
     def __init__(self, nome, descricao, data_entrega, status='Pending',
-                 id=None, data_inicio=None, data_conclusao=None, tempo_dedicado=0):
+                 id=None, data_inicio=None, data_conclusao=None, tempo_dedicado=0, inicio_timer=None):
         self.id = id
         self.nome = nome
         self.descricao = descricao
@@ -81,6 +127,7 @@ class Tarefa:
         self.data_inicio = data_inicio if data_inicio else datetime.now().strftime("%d/%m/%Y %H:%M")
         self.data_conclusao = data_conclusao
         self.tempo_dedicado = tempo_dedicado
+        self.inicio_timer = inicio_timer
 
 
 def menu():
@@ -92,7 +139,8 @@ def menu():
         print("2. Listar Tarefas")
         print("3. Remover Tarefa")
         print("4. Atualizar Status")
-        print("5. Sair")
+        print("5. Gestão de Tempo (Timer/Manual)")
+        print("6. Sair")
 
         opcao = input("Escolha uma opção: ")
 
@@ -110,8 +158,8 @@ def menu():
             else:
                 print("\n--- SUAS TAREFAS ---")
                 for tarefas in meu_gerenciador.lista_tarefas:
-                    print(f" ID: {tarefas.id} | Nome: {tarefas.nome} | Descrição: {tarefas.descricao} | "
-                          f"Data de Entrega: {tarefas.data_entrega} | Status: {tarefas.status}")
+                    print(f" ID: {tarefas.id} | Nome: {tarefas.nome} | Descrição: {tarefas.descricao} | Data de Entrega: {tarefas.data_entrega} |"
+                          f"Tempo: {tarefas.tempo_dedicado:.2f} min | Status: {tarefas.status}")
 
         elif opcao == '3':
             id_alv = input("Digite o ID da tarefa que deseja remover: ")
@@ -128,6 +176,19 @@ def menu():
             meu_gerenciador.atualizar_status(id_alv, novo_st)
 
         elif opcao == '5':
+            id_alv = input("ID da tarefa: ")
+            print("1. Iniciar Timer (Play) | 2. Parar Timer (Stop) | 3. Adicionar Manual")
+            sub_op = input("Escolha: ")
+
+            if sub_op == '1':
+                meu_gerenciador.gerenciar_timer(id_alv, "play")
+            elif sub_op == '2':
+                meu_gerenciador.gerenciar_timer(id_alv, "stop")
+            elif sub_op == '3':
+                minutos = input("Quantos minutos adicionar? ")
+                meu_gerenciador.adicionar_tempo_manual(id_alv, minutos)
+
+        elif opcao == '6':
             print("Saindo...")
             break
 
