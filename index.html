@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Nexus Planning - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-black text-white min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <h1 class="text-3xl font-bold tracking-tighter text-white">NEXUS <span class="text-blue-500">PLANNING</span></h1>
+            <button onclick="abrirModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold transition-all shadow-lg shadow-blue-900/20">
+                + Nova Tarefa
+            </button>
+        </div>
+
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl mb-12">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="border-l-2 border-zinc-700 pl-4">
+                    <p class="text-zinc-500 text-xs uppercase font-black">Foco Total</p>
+                    <p id="total-tempo" class="text-2xl font-mono">0.00 min</p>
+                </div>
+                <div class="border-l-2 border-zinc-700 pl-4">
+                    <p class="text-zinc-500 text-xs uppercase font-black">Concluídas</p>
+                    <p id="status-tarefas" class="text-2xl font-mono text-blue-400">0/0</p>
+                </div>
+                <div class="border-l-2 border-green-900 pl-4">
+                    <p class="text-zinc-500 text-xs uppercase font-black">Sistema</p>
+                    <p class="text-xl font-bold text-green-500">ONLINE</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="lista-tarefas" class="grid gap-4"></div>
+    </div>
+
+    <div id="modalTarefa" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl w-full max-w-md shadow-2xl">
+            <h2 id="modalTitulo" class="text-2xl font-bold mb-6">Criar Nova Tarefa</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-zinc-500 uppercase font-bold">Nome</label>
+                    <input type="text" id="nome" class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="text-xs text-zinc-500 uppercase font-bold">Descrição</label>
+                    <input type="text" id="descricao" class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="text-xs text-zinc-500 uppercase font-bold">Data de Entrega</label>
+                    <input type="text" id="data_entrega" placeholder="DD/MM/AAAA" class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="fecharModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl font-bold transition text-white">Cancelar</button>
+                <button onclick="salvarTarefa()" class="flex-1 bg-blue-600 hover:bg-blue-700 p-3 rounded-xl font-bold transition text-white">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000';
+        let idEdicao = null;
+
+        function abrirModal() { document.getElementById('modalTarefa').classList.remove('hidden'); }
+        function fecharModal() {
+            idEdicao = null;
+            document.getElementById('modalTitulo').innerText = "Criar Nova Tarefa";
+            document.getElementById('modalTarefa').classList.add('hidden');
+            document.getElementById('nome').value = '';
+            document.getElementById('descricao').value = '';
+            document.getElementById('data_entrega').value = '';
+        }
+
+        async function carregarTarefas() {
+            const res = await fetch(`${API_URL}/tarefas`);
+            const tarefas = await res.json();
+            const container = document.getElementById('lista-tarefas');
+            
+            container.innerHTML = tarefas.map(t => {
+                const statusColor = t.status === 'Completed' ? 'text-green-500' : 
+                                  t.status === 'In Progress' ? 'text-blue-400' : 'text-yellow-500';
+
+                return `
+                <div class="group bg-zinc-900 border border-zinc-800 p-6 rounded-2xl flex justify-between items-center hover:border-zinc-700 transition-all">
+                    <div class="flex-1">
+                        <h3 class="font-bold text-xl mb-1">${t.nome}</h3>
+                        <p class="text-zinc-500 text-sm">${t.descricao} • <span class="text-zinc-400">${t.data_entrega}</span></p>
+                        <div class="flex gap-3 mt-3">
+                            <button onclick='prepararEdicao(${JSON.stringify(t)})' class="text-[10px] text-zinc-500 hover:text-white uppercase font-bold tracking-widest">Editar</button>
+                            <button onclick="excluirTarefa(${t.id})" class="text-[10px] text-red-900 hover:text-red-500 uppercase font-bold tracking-widest">Excluir</button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-6">
+                        <div class="text-right flex flex-col items-end gap-2">
+                            <div class="flex items-center gap-2 bg-zinc-800 p-1 rounded-lg border border-zinc-700">
+                                <input type="number" id="manual-${t.id}" placeholder="0" class="bg-transparent w-10 text-center text-xs font-mono outline-none text-blue-400" />
+                                <button onclick="adicionarTempo(${t.id})" class="bg-zinc-700 hover:bg-zinc-600 px-2 py-0.5 rounded text-[10px] font-bold">+min</button>
+                            </div>
+                            <div>
+                                <p class="text-blue-400 font-mono font-bold text-lg">${t.tempo_dedicado.toFixed(2)}m</p>
+                                <button onclick="alterarStatus(${t.id}, '${t.status}')" class="text-[10px] uppercase tracking-widest font-black hover:underline ${statusColor}">
+                                    ${t.status}
+                                </button>
+                            </div>
+                        </div>
+
+                        <button onclick="toggleTimer(${t.id}, ${!!t.inicio_timer})" 
+                                class="p-4 rounded-2xl transition-all ${t.inicio_timer ? 'bg-red-600 animate-pulse' : 'bg-zinc-800 hover:bg-blue-600'}">
+                            ${t.inicio_timer ? '■' : '<img src="https://img.icons8.com/?size=100&id=GwYlS5m5Goz6&format=png&color=000000" alt="Play" class="w-6 h-6">'}
+                        </button>
+                    </div>
+                </div>
+            `;}).join('');
+
+            document.getElementById('total-tempo').innerText = tarefas.reduce((acc, t) => acc + t.tempo_dedicado, 0).toFixed(2) + " min";
+            document.getElementById('status-tarefas').innerText = `${tarefas.filter(t => t.status === 'Completed').length}/${tarefas.length}`;
+        }
+
+        async function salvarTarefa() {
+            const dados = {
+                nome: document.getElementById('nome').value,
+                descricao: document.getElementById('descricao').value,
+                data_entrega: document.getElementById('data_entrega').value
+            };
+            const url = idEdicao ? `${API_URL}/tarefas/${idEdicao}` : `${API_URL}/tarefas`;
+            const metodo = idEdicao ? 'PUT' : 'POST';
+            const res = await fetch(url, {
+                method: metodo,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(dados)
+            });
+            if (res.ok) { fecharModal(); carregarTarefas(); }
+        }
+
+        async function adicionarTempo(id) {
+            const minutos = document.getElementById(`manual-${id}`).value;
+            if (!minutos || minutos <= 0) return;
+            await fetch(`${API_URL}/tarefas/${id}/tempo_manual?minutos=${minutos}`, { method: 'POST' });
+            carregarTarefas();
+        }
+
+        async function excluirTarefa(id) {
+            if (confirm("Excluir esta tarefa?")) {
+                await fetch(`${API_URL}/tarefas/${id}`, { method: 'DELETE' });
+                carregarTarefas();
+            }
+        }
+
+        async function toggleTimer(id, isRunning) {
+            const acao = isRunning ? 'stop' : 'play';
+            await fetch(`${API_URL}/tarefas/${id}/timer?acao=${acao}`, { method: 'POST' });
+            carregarTarefas();
+        }
+
+        async function alterarStatus(id, statusAtual) {
+            let novoStatus = statusAtual === 'Pending' ? 'In Progress' : statusAtual === 'In Progress' ? 'Completed' : 'Pending';
+            await fetch(`${API_URL}/tarefas/${id}/status?novo_status=${novoStatus}`, { method: 'PATCH' });
+            carregarTarefas();
+        }
+
+        function prepararEdicao(tarefa) {
+            idEdicao = tarefa.id;
+            document.getElementById('modalTitulo').innerText = "Editar Tarefa";
+            document.getElementById('nome').value = tarefa.nome;
+            document.getElementById('descricao').value = tarefa.descricao;
+            document.getElementById('data_entrega').value = tarefa.data_entrega;
+            abrirModal();
+        }
+
+        carregarTarefas();
+    </script>
+</body>
+</html>
