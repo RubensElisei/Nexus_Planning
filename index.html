@@ -1,60 +1,114 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <title>Nexus Planning - Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 </head>
-<body class="bg-black text-white min-h-screen p-4 md:p-8">
+
+<body class="bg-black text-white min-h-screen p-4 md:p-8 text-left">
 
     <div class="max-w-4xl mx-auto">
         <div class="flex justify-between items-center mb-10">
-            <h1 class="text-3xl font-bold tracking-tighter text-white">NEXUS <span class="text-blue-500">PLANNING</span></h1>
-            <button onclick="abrirModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold transition-all shadow-lg shadow-blue-900/20">
+            <h1 class="text-3xl font-bold tracking-tighter uppercase">Nexus <span class="text-blue-500">Planning</span>
+            </h1>
+            <button onclick="abrirModal()"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold transition-all shadow-lg shadow-blue-900/20">
                 + Nova Tarefa
             </button>
         </div>
 
-        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl mb-12">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="border-l-2 border-zinc-700 pl-4">
-                    <p class="text-zinc-500 text-xs uppercase font-black">Foco Total</p>
-                    <p id="total-tempo" class="text-2xl font-mono">0.00 min</p>
-                </div>
-                <div class="border-l-2 border-zinc-700 pl-4">
-                    <p class="text-zinc-500 text-xs uppercase font-black">Concluídas</p>
-                    <p id="status-tarefas" class="text-2xl font-mono text-blue-400">0/0</p>
-                </div>
-                <div class="border-l-2 border-green-900 pl-4">
-                    <p class="text-zinc-500 text-xs uppercase font-black">Sistema</p>
-                    <p class="text-xl font-bold text-green-500">ONLINE</p>
-                </div>
+        <div
+            class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl mb-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="border-l-2 border-zinc-700 pl-4">
+                <p class="text-zinc-500 text-xs uppercase font-black text-left">Foco Total</p>
+                <p id="total-tempo" class="text-2xl font-mono text-left">0.00 min</p>
+            </div>
+            <div class="border-l-2 border-zinc-700 pl-4">
+                <p class="text-zinc-500 text-xs uppercase font-black text-left">Concluídas</p>
+                <p id="status-tarefas" class="text-2xl font-mono text-blue-400 text-left">0/0</p>
+            </div>
+            <div class="border-l-2 border-green-900 pl-4">
+                <p class="text-zinc-500 text-xs uppercase font-black text-left">Sistema</p>
+                <p class="text-xl font-bold text-green-500 uppercase text-left">Online</p>
             </div>
         </div>
 
-        <div id="lista-tarefas" class="grid gap-4"></div>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl mb-12">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-left">📅 Calendário</h2>
+            <div id='calendar' class="text-sm"></div>
+        </div>
+
+        <div id="lista-tarefas" class="grid gap-4 mb-20"></div>
     </div>
 
-    <div id="modalTarefa" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl w-full max-w-md shadow-2xl">
-            <h2 id="modalTitulo" class="text-2xl font-bold mb-6">Criar Nova Tarefa</h2>
+    <div id="modalTarefa"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl w-full max-w-md shadow-2xl my-8">
+            <h2 id="modalTitulo" class="text-2xl font-bold mb-6 text-left">Criar Nova Tarefa</h2>
+
             <div class="space-y-4">
-                <div>
+                <div class="text-left">
                     <label class="text-xs text-zinc-500 uppercase font-bold">Nome</label>
-                    <input type="text" id="nome" class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
+                    <input type="text" id="nome"
+                        class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
                 </div>
-                <div>
+                <div class="text-left">
                     <label class="text-xs text-zinc-500 uppercase font-bold">Descrição</label>
-                    <input type="text" id="descricao" class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
+                    <input type="text" id="descricao"
+                        class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
                 </div>
-                <div>
+                <div id="container-data" class="text-left">
                     <label class="text-xs text-zinc-500 uppercase font-bold">Data de Entrega</label>
-                    <input type="text" id="data_entrega" placeholder="DD/MM/AAAA" class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
+                    <input type="text" id="data_entrega" placeholder="DD/MM/AAAA"
+                        class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-left">
+                    <div>
+                        <label class="text-xs text-zinc-500 uppercase font-bold">Início</label>
+                        <input type="time" id="hora_inicio"
+                            class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="text-xs text-zinc-500 uppercase font-bold">Fim</label>
+                        <input type="time" id="hora_fim"
+                            class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div class="mt-4 p-4 bg-zinc-800 rounded-xl border border-zinc-700">
+                    <div class="flex items-center gap-2 mb-3 text-left">
+                        <input type="checkbox" id="recorrente" onchange="toggleDiasRecorrencia()"
+                            class="w-4 h-4 rounded bg-zinc-700 border-zinc-600">
+                        <label for="recorrente" class="text-sm font-bold uppercase text-zinc-300">Tarefa
+                            Recorrente</label>
+                    </div>
+
+                    <div id="seletorDias" class="hidden grid grid-cols-7 gap-1">
+                        <button type="button" onclick="toggleDia(0)" id="dia-0"
+                            class="dia-btn border border-zinc-600 rounded p-1 text-[10px] hover:bg-zinc-600">S</button>
+                        <button type="button" onclick="toggleDia(1)" id="dia-1"
+                            class="dia-btn border border-zinc-600 rounded p-1 text-[10px] hover:bg-zinc-600">T</button>
+                        <button type="button" onclick="toggleDia(2)" id="dia-2"
+                            class="dia-btn border border-zinc-600 rounded p-1 text-[10px] hover:bg-zinc-600">Q</button>
+                        <button type="button" onclick="toggleDia(3)" id="dia-3"
+                            class="dia-btn border border-zinc-600 rounded p-1 text-[10px] hover:bg-zinc-600">Q</button>
+                        <button type="button" onclick="toggleDia(4)" id="dia-4"
+                            class="dia-btn border border-zinc-600 rounded p-1 text-[10px] hover:bg-zinc-600">S</button>
+                        <button type="button" onclick="toggleDia(5)" id="dia-5"
+                            class="dia-btn border border-zinc-600 rounded p-1 text-[10px] hover:bg-zinc-600">S</button>
+                        <button type="button" onclick="toggleDia(6)" id="dia-6"
+                            class="dia-btn border border-zinc-600 rounded p-1 text-[10px] hover:bg-zinc-600">D</button>
+                    </div>
                 </div>
             </div>
+
             <div class="flex gap-3 mt-8">
-                <button onclick="fecharModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl font-bold transition text-white">Cancelar</button>
-                <button onclick="salvarTarefa()" class="flex-1 bg-blue-600 hover:bg-blue-700 p-3 rounded-xl font-bold transition text-white">Salvar</button>
+                <button onclick="fecharModal()"
+                    class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl font-bold transition">Cancelar</button>
+                <button onclick="salvarTarefa()"
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 p-3 rounded-xl font-bold transition">Salvar</button>
             </div>
         </div>
     </div>
@@ -62,88 +116,192 @@
     <script>
         const API_URL = 'http://127.0.0.1:8000';
         let idEdicao = null;
+        let diasSelecionados = [];
+        let calendar;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var calendarEl = document.getElementById('calendar');
+
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'pt-br',
+                themeSystem: 'standard',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+
+                slotMinTime: '06:00:00',
+                slotMaxTime: '24:00:00',
+                allDaySlot: false,
+
+                slotLabelFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                    meridiem: false
+                },
+
+                events: `${API_URL}/calendario`,
+                height: 'auto',
+
+                viewClassNames: function () {
+                    const headers = document.querySelectorAll('.fc-col-header-cell-cushion');
+                    headers.forEach(h => h.style.color = 'black');
+
+                    const timeLabels = document.querySelectorAll('.fc-timegrid-slot-label-cushion');
+                    timeLabels.forEach(l => l.style.color = 'black');
+
+                    const timeCols = document.querySelectorAll('.fc-timegrid-col');
+                    timeCols.forEach(c => c.style.backgroundColor = 'var(--color-zinc-300)');
+                },
+
+                dayCellDidMount: function (info) {
+                    const dayNumber = info.el.querySelector('.fc-daygrid-day-number');
+                    info.el.style.backgroundColor = 'var(--color-zinc-300)';
+
+                    if (dayNumber) {
+                        dayNumber.style.color = 'black';
+                        dayNumber.style.width = '30px';
+                        dayNumber.style.height = '30px';
+                        dayNumber.style.display = 'flex';
+                        dayNumber.style.alignItems = 'center';
+                        dayNumber.style.justifyContent = 'center';
+                        dayNumber.style.margin = '2px auto';
+                        dayNumber.style.textDecoration = 'none';
+
+                        if (info.el.classList.contains('fc-day-today')) {
+                            dayNumber.style.backgroundColor = '#3b82f6';
+                            dayNumber.style.color = 'white';
+                            dayNumber.style.borderRadius = '50%';
+                            dayNumber.style.fontWeight = 'bold';
+                        }
+                    }
+                }
+            });
+
+            calendar.render();
+            carregarTarefas();
+        });
+
+        function toggleDiasRecorrencia() {
+            const seletor = document.getElementById('seletorDias');
+            const containerData = document.getElementById('container-data');
+            const isChecked = document.getElementById('recorrente').checked;
+            seletor.classList.toggle('hidden', !isChecked);
+            containerData.classList.toggle('hidden', isChecked);
+            if (isChecked) {
+                document.getElementById('data_entrega').value = '';
+            }
+        }
+
+        function toggleDia(num) {
+            const btn = document.getElementById(`dia-${num}`);
+            if (diasSelecionados.includes(num)) {
+                diasSelecionados = diasSelecionados.filter(d => d !== num);
+                btn.classList.remove('bg-blue-600', 'border-blue-500');
+            } else {
+                diasSelecionados.push(num);
+                btn.classList.add('bg-blue-600', 'border-blue-500');
+            }
+        }
 
         function abrirModal() { document.getElementById('modalTarefa').classList.remove('hidden'); }
+
         function fecharModal() {
             idEdicao = null;
-            document.getElementById('modalTitulo').innerText = "Criar Nova Tarefa";
+            diasSelecionados = [];
+            document.querySelectorAll('.dia-btn').forEach(b => b.classList.remove('bg-blue-600', 'border-blue-500'));
             document.getElementById('modalTarefa').classList.add('hidden');
+            document.getElementById('recorrente').checked = false;
+            toggleDiasRecorrencia();
+            limparCampos();
+        }
+
+        function limparCampos() {
             document.getElementById('nome').value = '';
             document.getElementById('descricao').value = '';
             document.getElementById('data_entrega').value = '';
+            document.getElementById('hora_inicio').value = '';
+            document.getElementById('hora_fim').value = '';
         }
 
         async function carregarTarefas() {
             const res = await fetch(`${API_URL}/tarefas`);
             const tarefas = await res.json();
             const container = document.getElementById('lista-tarefas');
-            
             container.innerHTML = tarefas.map(t => {
-                const statusColor = t.status === 'Completed' ? 'text-green-500' : 
-                                  t.status === 'In Progress' ? 'text-blue-400' : 'text-yellow-500';
-
+                const statusColor = t.status === 'Completed' ? 'text-green-500' :
+                    t.status === 'In Progress' ? 'text-blue-400' : 'text-yellow-500';
                 return `
-                <div class="group bg-zinc-900 border border-zinc-800 p-6 rounded-2xl flex justify-between items-center hover:border-zinc-700 transition-all">
-                    <div class="flex-1">
-                        <h3 class="font-bold text-xl mb-1">${t.nome}</h3>
-                        <p class="text-zinc-500 text-sm">${t.descricao} • <span class="text-zinc-400">${t.data_entrega}</span></p>
-                        <div class="flex gap-3 mt-3">
-                            <button onclick='prepararEdicao(${JSON.stringify(t)})' class="text-[10px] text-zinc-500 hover:text-white uppercase font-bold tracking-widest">Editar</button>
-                            <button onclick="excluirTarefa(${t.id})" class="text-[10px] text-red-900 hover:text-red-500 uppercase font-bold tracking-widest">Excluir</button>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-6">
-                        <div class="text-right flex flex-col items-end gap-2">
-                            <div class="flex items-center gap-2 bg-zinc-800 p-1 rounded-lg border border-zinc-700">
-                                <input type="number" id="manual-${t.id}" placeholder="0" class="bg-transparent w-10 text-center text-xs font-mono outline-none text-blue-400" />
-                                <button onclick="adicionarTempo(${t.id})" class="bg-zinc-700 hover:bg-zinc-600 px-2 py-0.5 rounded text-[10px] font-bold">+min</button>
-                            </div>
-                            <div>
-                                <p class="text-blue-400 font-mono font-bold text-lg">${t.tempo_dedicado.toFixed(2)}m</p>
-                                <button onclick="alterarStatus(${t.id}, '${t.status}')" class="text-[10px] uppercase tracking-widest font-black hover:underline ${statusColor}">
-                                    ${t.status}
-                                </button>
-                            </div>
-                        </div>
-
-                        <button onclick="toggleTimer(${t.id}, ${!!t.inicio_timer})" 
-                                class="p-4 rounded-2xl transition-all ${t.inicio_timer ? 'bg-red-600 animate-pulse' : 'bg-zinc-800 hover:bg-blue-600'}">
-                            ${t.inicio_timer ? '■' : '<img src="https://img.icons8.com/?size=100&id=GwYlS5m5Goz6&format=png&color=000000" alt="Play" class="w-6 h-6">'}
-                        </button>
+            <div class="group bg-zinc-900 border border-zinc-800 p-6 rounded-2xl flex justify-between items-center hover:border-zinc-700 transition-all text-left">
+                <div class="flex-1">
+                    <h3 class="font-bold text-xl mb-1">${t.recorrente ? '🔄 ' : ''}${t.nome}</h3>
+                    <p class="text-zinc-500 text-sm">${t.descricao} • <span class="text-zinc-400">${t.data_entrega || 'Recorrente'}</span></p>
+                    <div class="flex gap-3 mt-3">
+                        <button onclick='prepararEdicao(${JSON.stringify(t)})' class="text-[10px] text-zinc-500 hover:text-white uppercase font-bold tracking-widest">Editar</button>
+                        <button onclick="excluirTarefa(${t.id})" class="text-[10px] text-red-900 hover:text-red-500 uppercase font-bold tracking-widest">Excluir</button>
                     </div>
                 </div>
-            `;}).join('');
-
+                <div class="flex items-center gap-6">
+                    <div class="text-right flex flex-col items-end gap-2">
+                        <div class="flex items-center gap-2 bg-zinc-800 p-1 rounded-lg border border-zinc-700">
+                            <input type="number" id="manual-${t.id}" placeholder="0" class="bg-transparent w-10 text-center text-xs font-mono outline-none text-blue-400" />
+                            <button onclick="adicionarTempo(${t.id})" class="bg-zinc-700 hover:bg-zinc-600 px-2 py-0.5 rounded text-[10px] font-bold">+min</button>
+                        </div>
+                        <div>
+                            <p class="text-blue-400 font-mono font-bold text-lg text-right">${t.tempo_dedicado.toFixed(2)}m</p>
+                            <button onclick="alterarStatus(${t.id}, '${t.status}')" class="text-[10px] uppercase tracking-widest font-black hover:underline ${statusColor}">
+                                ${t.status}
+                            </button>
+                        </div>
+                    </div>
+                    <button onclick="toggleTimer(${t.id}, ${!!t.inicio_timer})" 
+                            class="p-4 rounded-2xl transition-all ${t.inicio_timer ? 'bg-red-600 animate-pulse' : 'bg-zinc-800 hover:bg-blue-600'}">
+                        ${t.inicio_timer ? '■' : '<img src="https://img.icons8.com/?size=100&id=GwYlS5m5Goz6&format=png&color=000000" alt="Play" class="w-6 h-6">'}
+                    </button>
+                </div>
+            </div>`;
+            }).join('');
             document.getElementById('total-tempo').innerText = tarefas.reduce((acc, t) => acc + t.tempo_dedicado, 0).toFixed(2) + " min";
             document.getElementById('status-tarefas').innerText = `${tarefas.filter(t => t.status === 'Completed').length}/${tarefas.length}`;
+            if (calendar) calendar.refetchEvents();
         }
 
         async function salvarTarefa() {
             const dados = {
                 nome: document.getElementById('nome').value,
                 descricao: document.getElementById('descricao').value,
-                data_entrega: document.getElementById('data_entrega').value
+                data_entrega: document.getElementById('data_entrega').value || "Recorrente",
+                hora_inicio: document.getElementById('hora_inicio').value || "00:00",
+                hora_fim: document.getElementById('hora_fim').value || "00:00",
+                recorrente: document.getElementById('recorrente').checked,
+                dias_semana: diasSelecionados
             };
+            const method = idEdicao ? 'PUT' : 'POST';
             const url = idEdicao ? `${API_URL}/tarefas/${idEdicao}` : `${API_URL}/tarefas`;
-            const metodo = idEdicao ? 'PUT' : 'POST';
             const res = await fetch(url, {
-                method: metodo,
-                headers: {'Content-Type': 'application/json'},
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dados)
             });
-            if (res.ok) { fecharModal(); carregarTarefas(); }
+            if (res.ok) {
+                fecharModal();
+                carregarTarefas();
+            }
         }
 
         async function adicionarTempo(id) {
-            const minutos = document.getElementById(`manual-${id}`).value;
-            if (!minutos || minutos <= 0) return;
-            await fetch(`${API_URL}/tarefas/${id}/tempo_manual?minutos=${minutos}`, { method: 'POST' });
+            const input = document.getElementById(`manual-${id}`);
+            const min = input.value;
+            if (!min || min <= 0) return;
+            await fetch(`${API_URL}/tarefas/${id}/tempo_manual?minutos=${min}`, { method: 'POST' });
             carregarTarefas();
         }
 
         async function excluirTarefa(id) {
-            if (confirm("Excluir esta tarefa?")) {
+            if (confirm("Deseja realmente excluir esta tarefa?")) {
                 await fetch(`${API_URL}/tarefas/${id}`, { method: 'DELETE' });
                 carregarTarefas();
             }
@@ -155,22 +313,33 @@
             carregarTarefas();
         }
 
-        async function alterarStatus(id, statusAtual) {
-            let novoStatus = statusAtual === 'Pending' ? 'In Progress' : statusAtual === 'In Progress' ? 'Completed' : 'Pending';
-            await fetch(`${API_URL}/tarefas/${id}/status?novo_status=${novoStatus}`, { method: 'PATCH' });
+        async function alterarStatus(id, s) {
+            let ns = s === 'Pending' ? 'In Progress' : s === 'In Progress' ? 'Completed' : 'Pending';
+            await fetch(`${API_URL}/tarefas/${id}/status?novo_status=${ns}`, { method: 'PATCH' });
             carregarTarefas();
         }
 
-        function prepararEdicao(tarefa) {
-            idEdicao = tarefa.id;
+        function prepararEdicao(t) {
+            idEdicao = t.id;
             document.getElementById('modalTitulo').innerText = "Editar Tarefa";
-            document.getElementById('nome').value = tarefa.nome;
-            document.getElementById('descricao').value = tarefa.descricao;
-            document.getElementById('data_entrega').value = tarefa.data_entrega;
+            document.getElementById('nome').value = t.nome;
+            document.getElementById('descricao').value = t.descricao;
+            document.getElementById('data_entrega').value = t.data_entrega === "Recorrente" ? "" : t.data_entrega;
+            document.getElementById('hora_inicio').value = t.hora_inicio || "00:00";
+            document.getElementById('hora_fim').value = t.hora_fim || "00:00";
+            document.getElementById('recorrente').checked = t.recorrente;
+            diasSelecionados = t.dias_semana || [];
+            toggleDiasRecorrencia();
+            document.querySelectorAll('.dia-btn').forEach(b => b.classList.remove('bg-blue-600', 'border-blue-500'));
+            diasSelecionados.forEach(num => {
+                const btn = document.getElementById(`dia-${num}`);
+                if (btn) btn.classList.add('bg-blue-600', 'border-blue-500');
+            });
             abrirModal();
         }
 
         carregarTarefas();
     </script>
 </body>
+
 </html>

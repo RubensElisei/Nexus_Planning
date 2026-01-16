@@ -1,5 +1,7 @@
 import json
 from datetime import datetime
+from pydantic import BaseModel
+from typing import List, Optional
 
 
 class TarefaNaoEncontrada(Exception):
@@ -18,13 +20,13 @@ class Gerenciador:
 
     def salvar_dados(self):
         with open('nexus_data.json', 'w', encoding='utf-8') as arquivo:
-            dados_limpos = []
+            dados_para_salvar = []
             for t in self.lista_tarefas:
-                info = t.__dict__.copy()
-                info['inicio_timer'] = None
-                dados_limpos.append(info)
+                temp_dict = t.dict()
+                temp_dict['inicio_timer'] = None
+                dados_para_salvar.append(temp_dict)
 
-            json.dump(dados_limpos, arquivo, indent=4, ensure_ascii=False)
+            json.dump(dados_para_salvar, arquivo, indent=4, ensure_ascii=False)
 
     def carregar_dados(self):
         try:
@@ -66,6 +68,10 @@ class Gerenciador:
                 tarefa.status = novo_status
                 if novo_status == "Completed":
                     tarefa.data_conclusao = datetime.now().strftime("%d/%m/%Y %H:%M")
+                    hoje = datetime.now().strftime("%d/%m/%Y")
+                    if hoje not in tarefa.conclusoes:
+                        tarefa.conclusoes.append(hoje)
+
                 self.salvar_dados()
                 return tarefa
         raise TarefaNaoEncontrada()
@@ -123,18 +129,25 @@ class Gerenciador:
         print("═"*35)
 
 
-class Tarefa:
-    def __init__(self, nome, descricao, data_entrega, status='Pending',
-                 id=None, data_inicio=None, data_conclusao=None, tempo_dedicado=0, inicio_timer=None):
-        self.id = id
-        self.nome = nome
-        self.descricao = descricao
-        self.data_entrega = data_entrega
-        self.status = status
-        self.data_inicio = data_inicio if data_inicio else datetime.now().strftime("%d/%m/%Y %H:%M")
-        self.data_conclusao = data_conclusao
-        self.tempo_dedicado = tempo_dedicado
-        self.inicio_timer = inicio_timer
+class Tarefa(BaseModel):
+    id: Optional[int] = None
+    nome: str
+    descricao: str
+    data_entrega: str
+    status: str = "Pending"
+    tempo_dedicado: float = 0.0
+    inicio_timer: Optional[datetime] = None
+    data_inicio: Optional[str] = None
+    data_conclusao: Optional[str] = None
+
+    recorrente: bool = False
+    dias_semana: List[int] = []
+    conclusoes: List[str] = []
+    hora_inicio: str = "00:00"
+    hora_fim: str = "00:00"
+
+    class Config:
+        from_attributes = True
 
 
 def menu():

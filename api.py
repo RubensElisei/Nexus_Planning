@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from main import Gerenciador, Tarefa, TarefaNaoEncontrada
 from pydantic import BaseModel
+from typing import List
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
@@ -21,6 +23,10 @@ class TarefaRequest(BaseModel):
     nome: str
     descricao: str
     data_entrega: str
+    hora_inicio: str = "00:00"
+    hora_fim: str = "00:00"
+    recorrente: bool = False
+    dias_semana: List[int] = []
 
 
 @app.get("/tarefas")
@@ -30,7 +36,7 @@ def list_tasks():
 
 @app.post("/tarefas")
 def create_task(dados: TarefaRequest):
-    nova = Tarefa(dados.nome, dados.descricao, dados.data_entrega)
+    nova = Tarefa(**dados.dict())
     meu_gerenciador.acionar(nova)
     return nova
 
@@ -66,7 +72,6 @@ def control_timer(id_alvo: int, acao: str):
 @app.put("/tarefas/{id_alvo}")
 def edit_task(id_alvo: int, dados: TarefaRequest):
     try:
-        # Busca a tarefa e atualiza os campos
         for t in meu_gerenciador.lista_tarefas:
             if t.id == id_alvo:
                 t.nome = dados.nome
@@ -86,3 +91,42 @@ def add_manual_time(id_alvo: int, minutos: float):
         return tarefa
     except TarefaNaoEncontrada:
         raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+
+@app.get("/calendario")
+def get_calendar_events():
+    eventos = []
+    hoje = datetime.now()
+
+    for t in meu_gerenciador.lista_tarefas:
+        if not t.recorrente:
+            try:
+                data_iso = datetime.strptime(t.data_entrega, "%d/%m/%Y").strftime("%Y-%m-%d")
+
+                eventos.append({
+                    "id": str(t.id),
+                    "title": t.nome,
+                    "start": f"{data_iso}T{t.hora_inicio}:00",
+                    "end": f"{data_iso}T{t.hora_fim}:00",
+                    "color": "#3b82f6" if t.status != "Completed" else "#10b981",
+                    "extendedProps": {"descricao": t.descricao}
+                })
+            except Exception:
+                pass
+
+        else:
+            for i in range(180):
+                dia_futuro = hoje + timedelta(days=i)
+                if dia_futuro.weekday() in t.dias_semana:
+                    data_str = dia_futuro.strftime("%d/%m/%Y")
+                    data_iso = dia_futuro.strftime("%Y-%m-%d")
+                    esta_concluido = data_str in t.conclusoes
+
+                    eventos.append({
+                        "id": f"{t.id}-{data_str}",
+                        "title": f"{t.nome}",
+                        "start": f"{data_iso}T{t.hora_inicio}:00",
+                        "end": f"{data_iso}T{t.hora_fim}:00",
+                        "color": "#10b981" if esta_concluido else "#6366f1"
+                    })
+    return eventos
