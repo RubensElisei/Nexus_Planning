@@ -77,6 +77,11 @@ def edit_task(id_alvo: int, dados: TarefaRequest):
                 t.nome = dados.nome
                 t.descricao = dados.descricao
                 t.data_entrega = dados.data_entrega
+                t.hora_inicio = dados.hora_inicio
+                t.hora_fim = dados.hora_fim
+                t.recorrente = dados.recorrente
+                t.dias_semana = dados.dias_semana
+
                 meu_gerenciador.salvar_dados()
                 return t
         raise TarefaNaoEncontrada()
