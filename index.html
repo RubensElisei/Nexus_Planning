@@ -36,12 +36,58 @@
             </div>
         </div>
 
-        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl mb-12">
-            <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-left">📅 Calendário</h2>
-            <div id='calendar' class="text-sm"></div>
+        <div class="relative flex items-center justify-center mb-12 group">
+            <button onclick="mudarSlide(-1)"
+                class="absolute -left-12 p-2 text-zinc-500 hover:text-blue-500 transition-all opacity-0 group-hover:opacity-100 text-3xl z-10">❮</button>
+
+            <div
+                class="w-full bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl min-h-[550px] overflow-hidden relative">
+
+                <div class="slide-item block transition-opacity duration-500">
+                    <h2 class="text-xl font-bold mb-6 flex items-center gap-2 text-left">📅 Calendário</h2>
+                    <div id='calendar' class="text-sm"></div>
+                </div>
+
+                <div class="slide-item hidden transition-opacity duration-500">
+                    <h2 class="text-xl font-bold mb-6 flex items-center gap-2 text-left">✅ Minhas Tarefas</h2>
+                    <div class="space-y-4">
+                        <div class="flex gap-2 mb-6">
+                            <input type="text" id="novo-afazer" placeholder="O que precisa ser feito agora?"
+                                class="flex-1 bg-zinc-800 border border-zinc-700 p-3 rounded-xl text-sm outline-none focus:border-blue-500 text-white">
+                            <button onclick="adicionarAfazer()"
+                                class="bg-blue-600 hover:bg-blue-700 px-6 rounded-xl font-bold transition-colors">+</button>
+                        </div>
+                        <div id="lista-afazeres" class="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-item hidden transition-opacity duration-500">
+                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-left">📝 Anotações</h2>
+
+                    <div class="flex items-center gap-2 mb-2 overflow-x-auto pb-2 custom-scrollbar" id="container-abas">
+                    </div>
+
+                    <textarea id="bloco-notas"
+                        class="w-full h-[380px] bg-zinc-800/30 border border-zinc-800 p-6 rounded-2xl text-zinc-300 outline-none focus:border-blue-500 resize-none font-sans"
+                        placeholder="Selecione uma aba ou crie uma nova para anotar..."></textarea>
+                </div>
+                <div class="flex justify-between items-center mt-3">
+                    <p class="text-[10px] text-zinc-600 uppercase font-black tracking-widest">Auto-save ativado</p>
+                </div>
+            </div>
+            <button onclick="mudarSlide(1)"
+                class="absolute -right-12 p-2 text-zinc-500 hover:text-blue-500 transition-all opacity-0 group-hover:opacity-100 text-3xl z-10">❯</button>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+        <div class="relative flex items-center justify-center mb-12 group">
         </div>
 
-        <div id="lista-tarefas" class="grid gap-4 mb-20"></div>
+        <div id="lista-tarefas" class="grid gap-4 mb-20">
+        </div>
+    </div>
     </div>
 
     <div id="modalTarefa"
@@ -118,6 +164,10 @@
         let idEdicao = null;
         let diasSelecionados = [];
         let calendar;
+        let slideAtual = 0;
+        let notasAbas = JSON.parse(localStorage.getItem('nexus_abas')) || [{ id: Date.now(), titulo: 'Geral', conteudo: '' }];
+        let abaAtivaId = notasAbas[0].id;
+        let afazeres = JSON.parse(localStorage.getItem('nexus_afazeres')) || [];
 
         document.addEventListener('DOMContentLoaded', function () {
             var calendarEl = document.getElementById('calendar');
@@ -189,8 +239,10 @@
             const seletor = document.getElementById('seletorDias');
             const containerData = document.getElementById('container-data');
             const isChecked = document.getElementById('recorrente').checked;
+
             seletor.classList.toggle('hidden', !isChecked);
             containerData.classList.toggle('hidden', isChecked);
+
             if (isChecked) {
                 document.getElementById('data_entrega').value = '';
             }
@@ -338,7 +390,112 @@
             abrirModal();
         }
 
+        function mudarSlide(direcao) {
+            const slides = document.querySelectorAll('.slide-item');
+            slides[slideAtual].classList.add('hidden');
+            slides[slideAtual].classList.remove('block');
+
+            slideAtual = (slideAtual + direcao + slides.length) % slides.length;
+
+            slides[slideAtual].classList.remove('hidden');
+            slides[slideAtual].classList.add('block');
+
+            if (slideAtual === 0 && calendar) {
+                calendar.updateSize();
+            }
+        }
+
+        function adicionarAfazer() {
+            const input = document.getElementById('novo-afazer');
+            if (!input.value.trim()) return;
+            afazeres.push({ texto: input.value, feito: false });
+            input.value = '';
+            renderizarAfazeres();
+        }
+
+        function renderizarAfazeres() {
+            const lista = document.getElementById('lista-afazeres');
+            localStorage.setItem('nexus_afazeres', JSON.stringify(afazeres));
+            lista.innerHTML = afazeres.map((item, i) => `
+        <div class="flex items-center gap-3 bg-zinc-800/50 p-3 rounded-xl border border-zinc-700 transition-all ${item.feito ? 'opacity-50' : ''}">
+            <input type="checkbox" ${item.feito ? 'checked' : ''} 
+                   onchange="afazeres[${i}].feito = !afazeres[${i}].feito; renderizarAfazeres();" 
+                   class="w-4 h-4 rounded bg-zinc-700 border-zinc-600 accent-blue-500">
+            <span class="text-sm ${item.feito ? 'line-through text-zinc-500' : 'text-zinc-300'}">${item.texto}</span>
+            <button onclick="afazeres.splice(${i}, 1); renderizarAfazeres();" class="ml-auto text-zinc-600 hover:text-red-500">✕</button>
+        </div>
+    `).join('');
+        }
+
+        function renderizarAbas() {
+            const container = document.getElementById('container-abas');
+            const textarea = document.getElementById('bloco-notas');
+
+            const abaAtual = notasAbas.find(a => a.id === abaAtivaId);
+
+            textarea.value = abaAtual ? abaAtual.conteudo : "";
+
+            localStorage.setItem('nexus_abas', JSON.stringify(notasAbas));
+
+            container.innerHTML = notasAbas.map(aba => `
+        <div class="flex items-center group no-shrink">
+            <button onclick="abaAtivaId = ${aba.id}; renderizarAbas();" 
+                class="px-4 py-1.5 rounded-l-lg text-[10px] uppercase font-black tracking-widest transition-all ${aba.id === abaAtivaId ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'}">
+                ${aba.titulo}
+            </button>
+            <button onclick="removerAba(${aba.id})" 
+                class="px-2 py-1.5 bg-zinc-800 text-zinc-600 hover:text-red-500 hover:bg-zinc-700 rounded-r-lg text-[10px] border-l border-zinc-900/50">
+                ✕
+            </button>
+        </div>
+    `).join('') + `
+        <button onclick="criarNovaAba()" 
+            class="px-3 py-1.5 bg-zinc-800 hover:bg-blue-600 text-blue-500 hover:text-white rounded-lg text-xs font-bold transition-all">
+            + Nova Aba
+        </button>`;
+        }
+
+        function criarNovaAba() {
+            const titulo = prompt("Digite o nome do tema desta nota:", "Nova Nota");
+            if (!titulo) return;
+
+            const nova = {
+                id: Date.now(),
+                titulo: titulo,
+                conteudo: ''
+            };
+
+            notasAbas.push(nova);
+            abaAtivaId = nova.id;
+            renderizarAbas();
+        }
+
+        function removerAba(id) {
+            if (notasAbas.length === 1) {
+                alert("Você precisa manter pelo menos uma aba de anotações.");
+                return;
+            }
+
+            if (confirm("Deseja excluir esta aba e todas as anotações nela?")) {
+                notasAbas = notasAbas.filter(a => a.id !== id);
+                if (abaAtivaId === id) {
+                    abaAtivaId = notasAbas[0].id;
+                }
+                renderizarAbas();
+            }
+        }
+
+        document.getElementById('bloco-notas').addEventListener('input', (e) => {
+            const aba = notasAbas.find(a => a.id === abaAtivaId);
+            if (aba) {
+                aba.conteudo = e.target.value;
+                localStorage.setItem('nexus_abas', JSON.stringify(notasAbas));
+            }
+        });
+
         carregarTarefas();
+        renderizarAfazeres();
+        renderizarAbas();
     </script>
 </body>
 
