@@ -9,7 +9,7 @@
 </head>
 
 <body class="bg-black text-white min-h-screen p-4 md:p-8 text-left">
-
+    <audio id="som-alerta" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
     <div class="max-w-4xl mx-auto">
         <div class="flex justify-between items-center mb-10">
             <h1 class="text-3xl font-bold tracking-tighter uppercase">Nexus <span class="text-blue-500">Planning</span>
@@ -108,7 +108,8 @@
                 </div>
                 <div id="container-data" class="text-left">
                     <label class="text-xs text-zinc-500 uppercase font-bold">Data de Entrega</label>
-                    <input type="text" id="data_entrega" placeholder="DD/MM/AAAA"
+                    <input type="text" id="data_entrega" placeholder="DD/MM/AAAA" maxlength="10"
+                        oninput="mascaraData(this)"
                         class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl mt-1 text-white outline-none focus:border-blue-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4 text-left">
@@ -160,6 +161,7 @@
     </div>
 
     <script>
+        let alertasTocados = new Set();
         const API_URL = 'http://127.0.0.1:8000';
         let idEdicao = null;
         let diasSelecionados = [];
@@ -168,6 +170,7 @@
         let notasAbas = JSON.parse(localStorage.getItem('nexus_abas')) || [{ id: Date.now(), titulo: 'Geral', conteudo: '' }];
         let abaAtivaId = notasAbas[0].id;
         let afazeres = JSON.parse(localStorage.getItem('nexus_afazeres')) || [];
+        let tarefas = [];
 
         document.addEventListener('DOMContentLoaded', function () {
             var calendarEl = document.getElementById('calendar');
@@ -258,6 +261,15 @@
                 btn.classList.add('bg-blue-600', 'border-blue-500');
             }
         }
+        function mascaraData(input) {
+            let v = input.value.replace(/\D/g, "");
+
+            if (v.length > 2) v = v.substring(0, 2) + "/" + v.substring(2);
+
+            if (v.length > 5) v = v.substring(0, 5) + "/" + v.substring(5, 9);
+
+            input.value = v;
+        }
 
         function abrirModal() { document.getElementById('modalTarefa').classList.remove('hidden'); }
 
@@ -281,7 +293,7 @@
 
         async function carregarTarefas() {
             const res = await fetch(`${API_URL}/tarefas`);
-            const tarefas = await res.json();
+            tarefas = await res.json();
             const container = document.getElementById('lista-tarefas');
             container.innerHTML = tarefas.map(t => {
                 const statusColor = t.status === 'Completed' ? 'text-green-500' :
@@ -389,7 +401,53 @@
             });
             abrirModal();
         }
+        function verificarAlertas() {
+            if (!tarefas || tarefas.length === 0) return;
 
+            const agora = new Date();
+            const dia = String(agora.getDate()).padStart(2, '0');
+            const mes = String(agora.getMonth() + 1).padStart(2, '0');
+            const ano = agora.getFullYear();
+            const hojeFormatado = `${dia}/${mes}/${ano}`;
+
+            tarefas.forEach(t => {
+                if (t.status === 'Completed' || !t.hora_inicio || t.hora_inicio === "00:00") return;
+
+                const dataTarefa = t.data_entrega ? t.data_entrega.trim() : "";
+                const eParaHoje = dataTarefa === hojeFormatado || t.recorrente === true;
+
+                if (!eParaHoje) return;
+
+                const [horas, minutos] = t.hora_inicio.split(':');
+                const horarioTarefa = new Date();
+                horarioTarefa.setHours(parseInt(horas), parseInt(minutos), 0, 0);
+
+                const diferencaMinutos = (horarioTarefa - agora) / 60000;
+
+                console.log(`Verificando: ${t.nome} | Faltam: ${diferencaMinutos.toFixed(2)} min`);
+
+                if (diferencaMinutos > 9.4 && diferencaMinutos <= 10.5 && !alertasTocados.has(t.id)) {
+                    tocarAlerta(t.nome);
+                    alertasTocados.add(t.id);
+                }
+            });
+        }
+
+        function tocarAlerta(nomeTarefa) {
+            const som = document.getElementById('som-alerta');
+
+            som.currentTime = 0;
+            som.play().then(() => {
+                console.log("✅ Áudio disparado com sucesso!");
+            }).catch(e => {
+                console.warn("❌ Áudio bloqueado! Clique na página para autorizar o som.", e);
+            });
+
+            setTimeout(() => {
+                alert(`🔔 Nexus Alerta: "${nomeTarefa}" começa em 10 minutos!`);
+            }, 500);
+        }
+        
         function mudarSlide(direcao) {
             const slides = document.querySelectorAll('.slide-item');
             slides[slideAtual].classList.add('hidden');
@@ -496,6 +554,7 @@
         carregarTarefas();
         renderizarAfazeres();
         renderizarAbas();
+        setInterval(verificarAlertas, 30000);
     </script>
 </body>
 
