@@ -139,7 +139,6 @@ class Tarefa(BaseModel):
     inicio_timer: Optional[datetime] = None
     data_inicio: Optional[str] = None
     data_conclusao: Optional[str] = None
-
     recorrente: bool = False
     dias_semana: List[int] = []
     conclusoes: List[str] = []

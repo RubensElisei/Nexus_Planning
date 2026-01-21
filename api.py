@@ -27,6 +27,9 @@ class TarefaRequest(BaseModel):
     hora_fim: str = "00:00"
     recorrente: bool = False
     dias_semana: List[int] = []
+    tags: List[dict] = []
+    notas_estudo: str = ""
+    comentarios: List[dict] = []
 
 
 @app.get("/tarefas")
@@ -81,7 +84,9 @@ def edit_task(id_alvo: int, dados: TarefaRequest):
                 t.hora_fim = dados.hora_fim
                 t.recorrente = dados.recorrente
                 t.dias_semana = dados.dias_semana
-
+                t.tags = dados.tags
+                t.notas_estudo = dados.notas_estudo
+                t.comentarios = dados.comentarios
                 meu_gerenciador.salvar_dados()
                 return t
         raise TarefaNaoEncontrada()
